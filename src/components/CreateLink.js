@@ -3,7 +3,7 @@ import gql from 'graphql-tag';
 import { Mutation } from 'react-apollo';
 
 const postMutation = gql`
-  mutation($url: String!, $description: String!) {
+  mutation PostMutation($url: String!, $description: String!) {
     post(url: $url, description: $description) {
       id
       createdAt
