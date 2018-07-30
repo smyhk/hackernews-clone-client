@@ -25,6 +25,58 @@ export const feedQuery = gql`
       }
     }
   }
+`;
+
+const newLinksSubscription = gql`
+  subscription {
+    newLink {
+      node {
+        id
+        url
+        description
+        createdAt
+        postedBy {
+          id
+          name
+        }
+        votes {
+          id
+          user {
+            id
+          }
+        }
+      }
+    }
+  }
+`;
+
+const newVotesSubscription = gql`
+  subscription {
+    newVote {
+      node {
+        id
+        link {
+          id
+          url
+          description
+          createdAt
+          postedBy {
+            id
+            name
+          }
+          votes {
+            id
+            user {
+              id
+            }
+          }
+        }
+        user {
+          id
+        }
+      }
+    }
+  }
 `
 
 class LinkList extends Component {
@@ -36,12 +88,38 @@ class LinkList extends Component {
 
     store.writeQuery({ query: feedQuery, data });
   }
+
+  _subscribeToNewLinks = subscribeToMore => {
+    subscribeToMore({
+      document: newLinksSubscription,
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev;
+        const newLink = subscriptionData.data.newLink.node;
+
+        return Object.assign({}, prev, {
+          links: [newLink, ...prev.feed.links],
+          count: prev.feed.links.length + 1,
+          __typename: prev.feed.__typename
+        });
+      }
+    });
+  }
+
+  _subscribeToNewVotes = subscribeToMore => {
+    subscribeToMore({
+      document: newVotesSubscription
+    })
+  }
+
   render() {
     return (
       <Query query={feedQuery}>
-        {({ loading, error, data }) => {
+        {({ loading, error, data, subscribeToMore }) => {
           if (loading) return <div>Fetching</div>
           if (error) return <div>Error</div>
+
+          this._subscribeToNewLinks(subscribeToMore)
+          this._subscribeToNewVotes(subscribeToMore)
 
           const linksToRender = data.feed.links
 
